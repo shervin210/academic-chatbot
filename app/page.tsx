@@ -1,8 +1,8 @@
-// src/app/page.tsx
 'use client';
 
 import { useState } from 'react';
-import { generateAcademicResponse } from './actions'; // ✅ ایمپورت از فایل جداگانه
+import { generateAcademicResponse } from './actions';
+import { formatForDisplay } from '@/utils/format';
 
 export default function AcademicChatPage() {
   const [input, setInput] = useState('');
@@ -19,7 +19,6 @@ export default function AcademicChatPage() {
     setLoading(true);
 
     try {
-      // ✅ فراخوانی Server Action (در واقع یه POST پنهان می‌زنه)
       const reply = await generateAcademicResponse([...messages, userMsg]);
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch (err: any) {
@@ -42,7 +41,13 @@ export default function AcademicChatPage() {
             className={`mb-3 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}
           >
             <span className="font-medium">{msg.role === 'user' ? 'شما:' : 'دستیار:'}</span>{' '}
-            {msg.content}
+            <div
+              dangerouslySetInnerHTML={{
+                __html: formatForDisplay(msg.content)
+              }}
+              dir='rtl'
+              className="whitespace-pre-line"
+            />
           </div>
         ))}
         {loading && <div className="text-gray-500">در حال تفکر...</div>}

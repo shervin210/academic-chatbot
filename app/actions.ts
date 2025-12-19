@@ -1,14 +1,14 @@
-// src/app/actions.ts
 'use server';
 
 import Groq from 'groq-sdk';
+import type { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
 export async function generateAcademicResponse(
-    messages: { role: string; content: string }[]
+    messages: ChatCompletionMessageParam[]
 ) {
     try {
         const chatCompletion = await groq.chat.completions.create({
