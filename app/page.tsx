@@ -1,67 +1,96 @@
-// src/app/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { generateAcademicResponse } from './actions'; // ✅ ایمپورت از فایل جداگانه
+import React, { useState } from "react";
 
-export default function AcademicChatPage() {
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
-  const [loading, setLoading] = useState(false);
+type Operator = "+" | "-" | "*" | "/";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+const operators: Operator[] = ["+", "-", "*", "/"];
 
-    const userMsg = { role: 'user' as const, content: input };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setLoading(true);
+const App = () => {
+  const [input, setInput] = useState<string>("");
 
+  const getLastChar = () => input.slice(-1);
+
+  const isOperator = (char: string): char is Operator =>
+    operators.includes(char as Operator);
+
+  const clickVal = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const value = e.currentTarget.dataset.value;
+    if (!value) return;
+
+    const lastChar = getLastChar();
+
+    if (isOperator(value) && (input === "" || isOperator(lastChar))) return;
+
+    if (value === ".") {
+      const lastNumber = input.split(/[\+\-\*\/]/).pop();
+      if (lastNumber?.includes(".")) return;
+    }
+
+    setInput((prev) => prev + value);
+  };
+
+  const calculate = () => {
     try {
-      // ✅ فراخوانی Server Action (در واقع یه POST پنهان می‌زنه)
-      const reply = await generateAcademicResponse([...messages, userMsg]);
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-    } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: `❌ خطا: ${err.message}` },
-      ]);
-    } finally {
-      setLoading(false);
+      if (!input || isOperator(getLastChar())) return;
+
+      const result = Function(`"use strict"; return (${input})`)();
+
+      if (typeof result === "number" && isFinite(result)) {
+        setInput(result.toString());
+      }
+    } catch {
+      setInput("Error");
     }
   };
 
+  const clearLastChar = () => {
+    setInput((prev) => prev.slice(0, -1));
+  };
+
+  const clearAll = () => {
+    setInput("");
+  };
+
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">🎓 دستیار آموزشی</h1>
-      <div className="h-[500px] overflow-y-auto border rounded p-4 mb-4 bg-gray-50 text-black">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`mb-3 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}
-          >
-            <span className="font-medium">{msg.role === 'user' ? 'شما:' : 'دستیار:'}</span>{' '}
-            {msg.content}
-          </div>
-        ))}
-        {loading && <div className="text-gray-500">در حال تفکر...</div>}
-      </div>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+    <div className="flex justify-center items-center w-full h-screen flex-col">
+      <div className="flex flex-col items-center justify-center w-full mb-4">
         <input
+          className="w-[480px] h-16 border-2 text-3xl px-4"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="سؤال آموزشی خود را بپرسید..."
-          className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          placeholder="0"
+          readOnly
         />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          ارسال
-        </button>
-      </form>
+      </div>
+
+      <div className="flex w-full justify-center">
+        <div className="bg-gray-300 w-[480px] p-2 text-black">
+          <div className="grid grid-cols-4 gap-2">
+            {["+", "-", "/", "*"].map(op => (
+              <button key={op} data-value={op} onClick={clickVal}>
+                {op}
+              </button>
+            ))}
+
+            {["7", "8", "9"].map(n => (
+              <button key={n} data-value={n} onClick={clickVal}>{n}</button>
+            ))}
+
+            <button className="row-span-3 bg-green-400" onClick={calculate}>
+              =
+            </button>
+
+            {["4", "5", "6", "1", "2", "3", "0", "."].map(n => (
+              <button key={n} data-value={n} onClick={clickVal}>{n}</button>
+            ))}
+
+            <button onClick={clearAll}>AC</button>
+            <button onClick={clearLastChar}>C</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default App;
